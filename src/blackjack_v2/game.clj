@@ -53,8 +53,29 @@
         points (points-cards cards)]
     (assoc new-player :points points)))
 
-(def player (player "Cesar Alcancio"))
-(card/print-player (more-card player))
+(defn player-decision-continue? [player]
+  (= (read-line) "sim"))
 
-; (card/print-player (player "Cesar"))
-; (card/print-player (player "Dealer"))
+(defn dealer-decision-continue? [player-points dealer]
+  (let [dealer-points (:points dealer)]
+    (<= dealer-points player-points)))
+
+; funcao game, responsavel por perguntar para o jogador se ele quer mais carta
+; caso ele queira mais carta, chamar a funcao more-card
+; e assim sucessivamente
+(defn game [player fn-decision-continue?]
+  (println (:player-name player) ": mais carta?")
+  (if (fn-decision-continue? player)
+    (let [player-with-more-cards (more-card player)]
+      (card/print-player player-with-more-cards)
+      (recur player-with-more-cards fn-decision-continue?))
+    player))
+
+(def player-1 (player "Cesar"))
+(card/print-player player-1)
+
+(def dealer (player "Dealer"))
+(card/print-player dealer)
+
+(def player-after-game (game player-1 player-decision-continue?))
+(game dealer (partial dealer-decision-continue? (:points player-after-game)))
