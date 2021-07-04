@@ -54,28 +54,53 @@
     (assoc new-player :points points)))
 
 (defn player-decision-continue? [player]
+  (println (:player-name player) ": mais carta?")
   (= (read-line) "sim"))
 
 (defn dealer-decision-continue? [player-points dealer]
   (let [dealer-points (:points dealer)]
-    (<= dealer-points player-points)))
+    (if (> player-points 21) false (<= dealer-points player-points))))
 
 ; funcao game, responsavel por perguntar para o jogador se ele quer mais carta
 ; caso ele queira mais carta, chamar a funcao more-card
 ; e assim sucessivamente
 (defn game [player fn-decision-continue?]
-  (println (:player-name player) ": mais carta?")
   (if (fn-decision-continue? player)
     (let [player-with-more-cards (more-card player)]
       (card/print-player player-with-more-cards)
       (recur player-with-more-cards fn-decision-continue?))
     player))
 
+; se ambos passaram de 21 -> ambos perderam
+; se pontos iguais -> empatou
+; se player passou de 21 -> dealer ganhou
+; se dealer passou de 21 -> player ganhou
+; se player maior que dealer -> player ganhou
+; se dealer maior que player -> dealer ganhou
+(defn end-game [player dealer]
+  (let [player-points (:points player)
+        dealer-points (:points dealer)
+        player-name (:player-name player)
+        dealer-name (:player-name dealer)
+        message (cond
+                  (and (> player-points 21) (> dealer-points 21)) "Ambos perderam"
+                  (= player-points dealer-points) "empatou"
+                  (> player-points 21) (str dealer-name " ganhou")
+                  (> dealer-points 21) (str player-name " ganhou")
+                  (> player-points dealer-points) (str player-name " ganhou")
+                  (> dealer-points player-points) (str dealer-name " ganhou"))]
+    (card/print-player player)
+    (card/print-player dealer)
+    (print message)))
+
 (def player-1 (player "Cesar"))
 (card/print-player player-1)
 
 (def dealer (player "Dealer"))
-(card/print-player dealer)
+(card/print-masked-player dealer)
 
 (def player-after-game (game player-1 player-decision-continue?))
-(game dealer (partial dealer-decision-continue? (:points player-after-game)))
+(def partial-dealer-decision-continue? (partial dealer-decision-continue? (:points player-after-game)))
+(def dealer-after-game (game dealer partial-dealer-decision-continue?))
+
+(end-game player-after-game dealer-after-game)
